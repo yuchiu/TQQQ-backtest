@@ -94,12 +94,13 @@ export function calculateStats(dailyPortfolio) {
     const bestYear = Math.max(...annualReturnsPct.map(r => r.returnPct));
     const worstYear = Math.min(...annualReturnsPct.map(r => r.returnPct));
 
-    console.log('\n====================== 📊 Portfolio Stats 📊 ======================');
-    console.log(`Final Balance:   $${finalValue.toFixed(2)}`);
-    console.log(`CAGR:            ${(annualReturn * 100).toFixed(2)}%`);
-    console.log(`Best Year:       ${(bestYear * 100).toFixed(2)}%`);
-    console.log(`Worst Year:      ${(worstYear * 100).toFixed(2)}%`);
-    console.log(`Max Drawdown:    ${(maxDrawdown * 100).toFixed(2)}%`);
-    console.log(`Sharpe Ratio:    ${sharpeRatio.toFixed(2)}`);
-    console.log("============================= 🏁 END 🏁 =============================\n");
+    console.log(`CAGR: ${(annualReturn * 100).toFixed(2)}%`);
+    console.log(`Best Year: ${(bestYear * 100).toFixed(2)}%`);
+    console.log(`Worst Year: ${(worstYear * 100).toFixed(2)}%`);
+    console.log(`Max Drawdown: ${(maxDrawdown * 100).toFixed(2)}%`);
+    console.log(`Sharpe Ratio: ${sharpeRatio.toFixed(2)}`);
+    console.log("\n================================== 🏁 END 🏁 =================================\n");
+
+    return { finalValue, annualReturn, bestYear, worstYear, maxDrawdown, sharpeRatio };
+
 }

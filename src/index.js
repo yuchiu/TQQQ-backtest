@@ -11,33 +11,40 @@ const __dirname = path.dirname(__filename);
 
 // Config
 const CSV_FILE = path.join(__dirname, '../historical_data/aggregated_TQQQ_simulation_1999_2025.csv');
-// const START_DATE = '1999-03-11'; // QQQ Launch
-// const START_DATE = '2000-03-11'; // Peak before 2000 Internet Bubble
-const START_DATE = '2007-10-31'; // Peak before 2008 Financial Crisis
-// const START_DATE = '2010-02-11'; // Peak before 2008 Financial Crisis
-// const START_DATE = '2018-08-31'; // Peak before 2008 Financial Crisis
-// const START_DATE = '2021-12-31'; // Peak before 2022 correction
+
+// export const START_DATE = '1999-03-11'; // QQQ Launch
+// export const START_DATE = '2000-03-11'; // Peak before 2000 Internet Bubble
+// export const START_DATE = '2007-10-31'; // Peak before 2008 Financial Crisis
+// export const START_DATE = '2010-02-11'; // Peak before 2008 Financial Crisis
+// export const START_DATE = '2018-08-31'; // Peak before 2008 Financial Crisis
+export const START_DATE = '2021-12-31'; // Peak before 2022 correction
 
 // export const END_DATE = '2018-08-31';
 // export const END_DATE = '2021-12-31'; // Peak before 2022 correction
 export const END_DATE = '2025-03-31'; // Online backtest tool date
 // export const END_DATE = '2025-04-22'; // historical data date
 const INITIAL_BUY_AMOUNT = 10000;
-const BUY_MULTIPLE = 1.618; // 1.618
-const SELL_FRACTION = 0.146; // 0.146 0.236 0.382
-const DROP_LEVELS = [0.382, 0.5, 0.618, 0.786, 0.886, 0.941, 0.970, 0.985];
+// const BUY_MULTIPLE = 1.618
+const BUY_MULTIPLE = 2;
+// const SELL_FRACTION = 0.146; // 0.146 0.236 0.382
+const SELL_FRACTION = 0.2;
+const DROP_LEVELS = [
+    // 0.382, 0.5, 0.618, 0.786, 0.886, 0.941, 0.970, 0.985
+    0.5, 0.75, 0.875, 0.9375, 0.96875
+];
 const SELL_MULTIPLIERS = [
     // 10000
-    2.618, 4.236, 6.854, 11.089,
-    17.944, 29.032, 46.769, 75.706, 122.429
+    // 1.618, 2.618, 4.236, 6.854, 11.089, 17.944, 29.032, 46.769, 75.706, 122.429
+    2, 4, 8, 16, 32, 64, 128
 ];
 
-console.log("====================== ⚙️  RULES ⚙️ ======================");
-console.log(`Buy Triggers (Drawdown % Levels): ${DROP_LEVELS.map(val => ` ${val}`)}`);
-console.log(`Buy Amount Growth Factor        : ${BUY_MULTIPLE}x`);
-console.log(`Sell Targets (Price Multipliers): ${SELL_MULTIPLIERS.map(val => ` ${val}`)}`);
-console.log(`Sell Fraction per Target        : ${SELL_FRACTION}`);
-console.log("\n====================== 💰 TRANSACTIONS 💰 ======================\n");
+console.log(`============================ ${START_DATE} - ${END_DATE} ==========================\n`);
+console.log("================================== ⚙️  RULES ⚙️  ================================");
+console.log(`Buy Triggers (Drawdown % Levels) : ${DROP_LEVELS.map(val => ` ${val}`)}`);
+console.log(`Buy Amount Growth Factor         : ${BUY_MULTIPLE}x`);
+console.log(`Sell Targets (Price Multipliers) : ${SELL_MULTIPLIERS.map(val => ` ${val}`)}`);
+console.log(`Sell Fraction per Target         : ${SELL_FRACTION}`);
+console.log("\n============================== 💰 TRANSACTIONS 💰 =============================");
 
 // State
 let globalPeakPrice = 0;
@@ -49,7 +56,7 @@ let nextSellMultiplierIndex = 0;
 let transactions = [];
 let holdingShares = 0;
 let cumulativeInvestedAmount = 0;
-
+let anchoredSellPrice = null; // Sell anchor point, using first Buy Level Triggered Price
 
 // For plotting portfolio
 let dailyPortfolio = [];
@@ -59,6 +66,7 @@ let cumulativeSoldAmount = 0;
 function handleBuy(price, date) {
     if (currentDropLevel === 0) {
         nextSellMultiplierIndex = 0; // <<< Only reset here if starting brand new cycle
+        anchoredSellPrice = price
     }
 
     const multiplier = Math.pow(BUY_MULTIPLE, currentDropLevel);
@@ -71,7 +79,7 @@ function handleBuy(price, date) {
     // Calculate actual drop from cyclePeakPrice
     const actualDropFromPeak = ((cyclePeakPrice - price) / cyclePeakPrice) * 100;
 
-    console.log(`Buy ${sharesBought.toFixed(2)} shares at $${price.toFixed(2)} on ${date} for $${buyAmount.toFixed(2)} (actual drop: ${actualDropFromPeak.toFixed(2)}% from $${cyclePeakPrice.toFixed(2)})`);
+    console.log(`Buy ${sharesBought.toFixed(2)} shares at $${price.toFixed(2)} on ${date} for $${buyAmount.toFixed(2)} (price drop: ${actualDropFromPeak.toFixed(2)}% from $${cyclePeakPrice.toFixed(2)})`);
 
     currentDropLevel++;
     cumulativeInvestedAmount += buyAmount;
@@ -83,7 +91,7 @@ function handleSell(price, date) {
 
     holdingShares *= (1 - SELL_FRACTION);
 
-    console.log(`Sell ${((SELL_FRACTION) * 100).toFixed(1)}% (${sharesToSell.toFixed(2)} shares) at $${price.toFixed(2)} on ${date} for $${(sharesToSell * price).toFixed(2)} (gain stage ${nextSellMultiplierIndex + 1} ${SELL_MULTIPLIERS[nextSellMultiplierIndex]})`);
+    console.log(`Sell ${((SELL_FRACTION) * 100).toFixed(1)}% (${sharesToSell.toFixed(2)} shares) at $${price.toFixed(2)} on ${date} for $${(sharesToSell * price).toFixed(2)} (sell target multiple ${SELL_MULTIPLIERS[nextSellMultiplierIndex]} of ${anchoredSellPrice.toFixed(2)})`);
 
     nextSellMultiplierIndex++;
     cumulativeSoldAmount += sharesToSell * price;
@@ -155,12 +163,7 @@ function runBacktest(data) {
         // ----- Sell Section -----
         if (hasRecovered && holdingShares > 0 && !boughtToday) {
             while (nextSellMultiplierIndex < SELL_MULTIPLIERS.length) {
-                const totalCostBasis = transactions
-                    .filter(t => t.type === 'BUY')
-                    .reduce((sum, t) => sum + (t.price * t.shares), 0);
-
-                const avgCostPerShare = totalCostBasis / holdingShares;
-                const targetSellPrice = avgCostPerShare * SELL_MULTIPLIERS[nextSellMultiplierIndex];
+                const targetSellPrice = anchoredSellPrice * SELL_MULTIPLIERS[nextSellMultiplierIndex];
 
                 if (close >= targetSellPrice) {
                     handleSell(close, date);
@@ -177,7 +180,7 @@ function runBacktest(data) {
         }
     }
 
-    finalize(data);
+    return finalize(data);
 }
 
 function finalize(data) {
@@ -206,13 +209,16 @@ function finalize(data) {
     const totalValue = finalPortfolioValue + totalSold;
     const multiple = totalInvested > 0 ? totalValue / totalInvested : 0;
 
-    console.log('\n====================== 📈 Summary 📈 ======================');
-    console.log(`Total Invested      : $${totalInvested.toFixed(2)}`);
+    console.log('\n================================ 📊 Summary 📊 ===============================');
+    console.log(`Total Invested: $${totalInvested.toFixed(2)}`);
     console.log(`Total Sold (Cashout): $${totalSold.toFixed(2)}`);
-    console.log(`Final Holding Value : $${finalPortfolioValue.toFixed(2)}`);
-    console.log(`Net Profit          : $${netProfit.toFixed(2)}`);
-    console.log(`Total Value         : $${totalValue.toFixed(2)} (Sold + Holding)`);
+    console.log(`Final Holding Value: $${finalPortfolioValue.toFixed(2)}`);
+    console.log(`Net Profit: $${netProfit.toFixed(2)}`);
+    console.log(`Total Value: $${totalValue.toFixed(2)} (Sold + Holding)`);
     console.log(`Multiple on Investment: ${multiple.toFixed(2)}x`);
+
+
+    return { multiple, totalInvested }
 }
 
 async function loadCSV(filepath) {
@@ -231,9 +237,10 @@ async function loadCSV(filepath) {
 (async () => {
     try {
         const data = await loadCSV(CSV_FILE);
-        runBacktest(data);
-        await plotPortfolio(dailyPortfolio);
-        await calculateStats(dailyPortfolio);
+        const backtestData = runBacktest(data);
+        const summaryStats = await calculateStats(dailyPortfolio);
+        const fullSummaryStats = { ...summaryStats, ...backtestData }
+        await plotPortfolio(dailyPortfolio, fullSummaryStats);
     } catch (err) {
         console.error('Error loading CSV:', err);
     }
