@@ -14,15 +14,15 @@ const CSV_FILE = path.join(__dirname, '../historical_data/aggregated_TQQQ_simula
 
 // export const START_DATE = '1999-03-11'; // QQQ Launch
 // export const START_DATE = '2000-03-11'; // Peak before 2000 Internet Bubble
-// export const START_DATE = '2007-10-31'; // Peak before 2008 Financial Crisis
+export const START_DATE = '2007-10-31'; // Peak before 2008 Financial Crisis
 // export const START_DATE = '2010-02-11'; // Peak before 2008 Financial Crisis
 // export const START_DATE = '2018-08-31'; // Peak before 2008 Financial Crisis
-export const START_DATE = '2021-12-31'; // Peak before 2022 correction
+// export const START_DATE = '2021-12-31'; // Peak before 2022 correction
 
 // export const END_DATE = '2018-08-31';
 // export const END_DATE = '2021-12-31'; // Peak before 2022 correction
-export const END_DATE = '2025-03-31'; // Online backtest tool date
-// export const END_DATE = '2025-04-22'; // historical data date
+// export const END_DATE = '2025-03-31'; // Online backtest tool date
+export const END_DATE = '2025-04-22'; // historical data date
 const INITIAL_BUY_AMOUNT = 10000;
 // const BUY_MULTIPLE = 1.618
 const BUY_MULTIPLE = 2;
@@ -30,12 +30,13 @@ const BUY_MULTIPLE = 2;
 const SELL_FRACTION = 0.2;
 const DROP_LEVELS = [
     // 0.382, 0.5, 0.618, 0.786, 0.886, 0.941, 0.970, 0.985
-    0.5, 0.75, 0.875, 0.9375, 0.96875
+    0.25, 0.5, 0.75, 0.875, 0.9375, 0.96875, 0.984375, 0.9921875
+    // 0.5, 0.75, 0.875, 0.9375, 0.96875, 0.984375, 0.9921875
 ];
 const SELL_MULTIPLIERS = [
     // 10000
     // 1.618, 2.618, 4.236, 6.854, 11.089, 17.944, 29.032, 46.769, 75.706, 122.429
-    2, 4, 8, 16, 32, 64, 128
+    2, 4, 8, 16, 32, 64, 128, 256
 ];
 
 console.log(`============================ ${START_DATE} - ${END_DATE} ==========================\n`);

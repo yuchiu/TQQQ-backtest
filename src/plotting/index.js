@@ -199,7 +199,7 @@ export function plotPortfolio(dailyPortfolio, summaryStats) {
             // yaxis2: { title: '年度收益率 (%)' },
             legend: {
                 orientation: 'h',
-                y: -0.42,
+                y: -0.45,
                 x: 0.25,
                 xanchor: 'center',
                 yanchor: 'bottom',
